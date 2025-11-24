@@ -6,8 +6,38 @@ A production-ready implementation of Grok-Mini V2: an autonomous AI core with:
 - Liquid MoE routing with trust-weighted expert selection
 - Fractal attention across temporal hierarchies
 - Autonomous tool execution (search, code, calculator)
+- **Windows GUI Chat Application** with ChatGPT-like interface
 
-## Quick Start
+## 🖥️ Windows Chat Application
+
+### For End Users
+
+**Easy Installation (Windows 10/11):**
+
+1. Download the release package
+2. Double-click `launch_chat.bat` to auto-install and run
+3. OR build executable: `python setup_windows.py`
+
+**Features:**
+- 🎨 Modern dark-themed chat interface
+- 💬 ChatGPT-style conversation
+- 🖼️ Image upload for vision questions
+- ⚙️ Adjustable temperature and token controls
+- 🚀 No Python required (when using built executable)
+
+See [WINDOWS_INSTALL.md](WINDOWS_INSTALL.md) for detailed installation instructions.
+
+### Quick Start (with Python)
+
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Launch chat app
+python chat_app.py
+```
+
+## 🐍 Python API
 
 ### Installation
 
@@ -28,7 +58,7 @@ response = generate(model, "Explain quantum computing:", max_new_tokens=100)
 print(response)
 ```
 
-### Run Example
+### Run CLI Example
 
 ```bash
 python example.py
@@ -45,23 +75,35 @@ python example.py
 
 ## Files
 
-- `grok_mini.py` - Main implementation
-- `example.py` - Usage example
-- `requirements.txt` - Dependencies
+- `chat_app.py` - Windows GUI chat application
+- `grok_mini.py` - Core model implementation
+- `example.py` - CLI usage example
+- `setup_windows.py` - Build Windows executable
+- `launch_chat.bat` - Windows launcher script
+- `requirements.txt` - Python dependencies
 - `instruct.md` - Detailed architectural documentation
+- `WINDOWS_INSTALL.md` - Windows installation guide
 
 ## Features
 
-### Fractal Vision Encoder
+### 🎨 Chat Application
+- Modern, responsive UI with dark theme
+- Real-time message streaming
+- Temperature and token length controls
+- Image upload for vision tasks
+- Chat history management
+- Keyboard shortcuts (Enter to send, Shift+Enter for newline)
+
+### 🧠 Fractal Vision Encoder
 Multi-scale patch embedding at 16x16, 32x32, and 64x64 resolutions for hierarchical visual understanding.
 
-### Liquid MoE Routing
+### 💧 Liquid MoE Routing
 Trust-weighted expert selection with dynamic routing based on learned confidence scores.
 
-### Fractal Attention
+### 🌊 Fractal Attention
 Multi-scale temporal attention that processes sequences at different granularities simultaneously.
 
-### Autonomous Tool Execution
+### 🔧 Autonomous Tool Execution
 Self-routed tool calling for:
 - Web search simulation
 - Code execution (sandboxed)
@@ -97,6 +139,18 @@ config.hidden_dim = 2048
 config.moe_experts = 32
 ```
 
+## Building Windows Executable
+
+```bash
+# Automatic build
+python setup_windows.py
+
+# Manual build
+pyinstaller --name=GrokMiniChat --onedir --windowed chat_app.py
+```
+
+The executable will be in `dist/GrokMiniChat/` and can be distributed to users without Python.
+
 ## Documentation
 
 See [instruct.md](instruct.md) for detailed architectural documentation, including:
@@ -104,6 +158,20 @@ See [instruct.md](instruct.md) for detailed architectural documentation, includi
 - Implementation details
 - Training strategies
 - Deployment considerations
+
+## System Requirements
+
+### Minimum
+- Windows 10 or higher (for GUI app)
+- Python 3.8+ (for source code)
+- 4 GB RAM
+- 2 GB disk space
+
+### Recommended
+- Windows 11
+- Python 3.10+
+- 16 GB RAM
+- NVIDIA GPU with 4GB+ VRAM
 
 ## License
 
