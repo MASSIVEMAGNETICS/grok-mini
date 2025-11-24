@@ -22,6 +22,7 @@ pip install openai networkx matplotlib
 """
 
 import os
+import re
 import textwrap
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -93,11 +94,17 @@ class ToolGraphMemory:
             if name == query:
                 return name
         
-        # 2. Substring Match (fuzzy)
+        # 2. Substring Match (bidirectional fuzzy)
         clean_query = query.lower().replace(" ", "_")
         for name in self.tools:
-            if name in clean_query:
+            name_lower = name.lower()
+            # Check if tool name is in query OR query is in tool name
+            if name_lower in clean_query or clean_query in name_lower:
                 return name
+            # Check if any word from query matches tool name
+            for word in clean_query.split('_'):
+                if len(word) > 3 and word in name_lower:  # Skip short words
+                    return name
         return None
 
 class RecursiveBuilder:
@@ -159,10 +166,22 @@ class RecursiveBuilder:
             temperature=0.1
         )
         
-        # Clean formatting just in case
+        # Clean formatting (handle various markdown code block formats)
         raw_content = response.choices[0].message.content.strip()
-        clean_code = raw_content.replace("```python", "").replace("```", "")
-        return clean_code
+        
+        # Remove markdown code blocks (python, py, or no language specified)
+        import re
+        # Match ```python, ```py, or just ```
+        code_block_pattern = r'^```(?:python|py)?\s*\n(.*?)\n```$'
+        match = re.search(code_block_pattern, raw_content, re.DOTALL)
+        
+        if match:
+            clean_code = match.group(1)
+        else:
+            # Fallback to simple replacement for inline cases
+            clean_code = raw_content.replace("```python", "").replace("```py", "").replace("```", "")
+        
+        return clean_code.strip()
 
     def _unsafe_compile(self, code_str: str) -> Callable:
         """
@@ -181,10 +200,19 @@ class RecursiveBuilder:
         local_scope = {}
         try:
             exec(code_str, {}, local_scope)
-            # Get the last defined function (assumes single function per generation)
-            func = list(local_scope.values())[-1]
-            if not callable(func):
-                raise ValueError("Generated code did not produce a callable function")
+            
+            # Extract callable functions from the scope
+            functions = [v for v in local_scope.values() if callable(v)]
+            
+            if len(functions) == 0:
+                raise ValueError("Generated code did not produce any callable function")
+            elif len(functions) > 1:
+                # If multiple functions, prefer the last one (main function)
+                # or the one with the longest name (typically the main implementation)
+                func = max(functions, key=lambda f: len(f.__name__))
+            else:
+                func = functions[0]
+            
             return func
         except Exception as e:
             ConsoleStyle.log("ERROR", f"Compilation Failed: {e}", ConsoleStyle.RED)
