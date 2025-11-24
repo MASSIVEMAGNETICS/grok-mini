@@ -30,10 +30,23 @@ from openai import OpenAI
 
 # --- CONFIGURATION ---
 # PRO TIP: Export this in your terminal: export OPENAI_API_KEY="sk-..."
-API_KEY = os.getenv("OPENAI_API_KEY") or "YOUR_API_KEY_HERE"
+API_KEY = os.getenv("OPENAI_API_KEY")
 MODEL_ID = "gpt-4o"
 
-client = OpenAI(api_key=API_KEY)
+# Client will be initialized on first use
+client = None
+
+def _get_client():
+    """Lazy initialization of OpenAI client."""
+    global client
+    if client is None:
+        if not API_KEY:
+            raise ValueError(
+                "OPENAI_API_KEY environment variable is required. "
+                "Please set it before running: export OPENAI_API_KEY='sk-...'"
+            )
+        client = OpenAI(api_key=API_KEY)
+    return client
 
 class ConsoleStyle:
     """Helper for aesthetic terminal output (The 'MassiveMagnetics' Aesthetic)."""
@@ -75,7 +88,12 @@ class ToolGraphMemory:
         """
         Semantic Retrieval: Checks if a tool exists for the query.
         """
-        # 1. Direct Name Match
+        # 1. Direct Name Match (exact)
+        for name in self.tools:
+            if name == query:
+                return name
+        
+        # 2. Substring Match (fuzzy)
         clean_query = query.lower().replace(" ", "_")
         for name in self.tools:
             if name in clean_query:
@@ -88,6 +106,34 @@ class RecursiveBuilder:
     """
     def __init__(self):
         self.memory = ToolGraphMemory()
+
+    def _classify_tags(self, objective: str) -> List[str]:
+        """Classify tool into semantic categories based on objective."""
+        objective_lower = objective.lower()
+        
+        tags = []
+        
+        # Math/calculation
+        if any(word in objective_lower for word in ["calc", "number", "math", "fibonacci", "sum", "multiply", "add"]):
+            tags.append("math")
+        
+        # String/text processing
+        if any(word in objective_lower for word in ["string", "text", "password", "format", "parse"]):
+            tags.append("text")
+        
+        # Data structures
+        if any(word in objective_lower for word in ["list", "dict", "array", "sort", "search"]):
+            tags.append("data_structure")
+        
+        # File/IO operations
+        if any(word in objective_lower for word in ["file", "read", "write", "save", "load"]):
+            tags.append("io")
+        
+        # Default to utility if no specific category
+        if not tags:
+            tags.append("utility")
+        
+        return tags
 
     def _generate_code(self, task: str) -> str:
         """LLM Call to architect the solution."""
@@ -104,7 +150,7 @@ class RecursiveBuilder:
             4. Function name must be snake_case and descriptive.
         """)
         
-        response = client.chat.completions.create(
+        response = _get_client().chat.completions.create(
             model=MODEL_ID,
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -119,11 +165,26 @@ class RecursiveBuilder:
         return clean_code
 
     def _unsafe_compile(self, code_str: str) -> Callable:
-        """Runtime Compilation."""
+        """
+        Runtime Compilation.
+        
+        WARNING: This uses exec() to compile LLM-generated code, which poses security risks.
+        Only use this in trusted environments with controlled inputs. Do NOT expose this
+        to untrusted users or run in production without proper sandboxing.
+        
+        For production use, consider:
+        - Running in a sandboxed environment (Docker, VM, restricted Python environment)
+        - Code review/validation before execution
+        - Static analysis of generated code
+        - Input validation and sanitization
+        """
         local_scope = {}
         try:
             exec(code_str, {}, local_scope)
+            # Get the last defined function (assumes single function per generation)
             func = list(local_scope.values())[-1]
+            if not callable(func):
+                raise ValueError("Generated code did not produce a callable function")
             return func
         except Exception as e:
             ConsoleStyle.log("ERROR", f"Compilation Failed: {e}", ConsoleStyle.RED)
@@ -138,7 +199,13 @@ class RecursiveBuilder:
         
         if cached_tool:
             ConsoleStyle.log("MEMORY", f"Recall Success. Using existing tool: [{cached_tool}]", ConsoleStyle.GREEN)
-            print(f"   >>> Running {cached_tool}()... [Success]")
+            # Actually execute the cached tool
+            try:
+                result = self.memory.tools[cached_tool]()
+                print(f"   >>> Executed {cached_tool}() -> {result}")
+            except TypeError:
+                # Function may require arguments
+                print(f"   >>> Found {cached_tool}() [Tool available for use]")
             return
 
         # 2. GENERATION STEP
@@ -150,7 +217,7 @@ class RecursiveBuilder:
             tool_name = tool_func.__name__
             
             # 4. MEMORY CONSOLIDATION
-            tags = ["math"] if "calc" in objective or "number" in objective else ["utility"]
+            tags = self._classify_tags(objective)
             
             self.memory.add_tool(
                 name=tool_name,
@@ -160,7 +227,7 @@ class RecursiveBuilder:
                 tags=tags
             )
             
-            print(f"   >>> Executed {tool_name}()... [Success]")
+            print(f"   >>> Generated and stored {tool_name}() [Success]")
             
         except Exception as e:
             ConsoleStyle.log("ERROR", f"Pipeline failed: {e}", ConsoleStyle.RED)
