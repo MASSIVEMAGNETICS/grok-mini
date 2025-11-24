@@ -140,8 +140,9 @@ class FractalAttention(nn.Module):
         
         for scale_idx, attn in enumerate(self.attentions):
             scale = 2 ** scale_idx
+            
+            # Skip this scale if sequence too short
             if S < scale:
-                # Skip this scale if sequence too short
                 scale_outputs.append(torch.zeros_like(x))
                 continue
             
@@ -269,22 +270,40 @@ class AutonomousToolExecutor:
 
     @staticmethod
     def code_exec(code: str) -> str:
-        try:
-            # Sandboxed execution (limited for safety)
-            allowed_globals = {"__builtins__": {}}
-            exec_locals = {}
-            exec(code, allowed_globals, exec_locals)
-            return f"[CODE EXEC] Success. Locals: {exec_locals}"
-        except Exception as e:
-            return f"[CODE ERROR] {str(e)}"
+        # Code execution disabled for security reasons
+        return "[CODE EXEC] Code execution is disabled for security. Please use the calculator for math expressions."
 
     @staticmethod
     def calculator(expr: str) -> str:
         try:
-            result = eval(expr.replace(" ", ""))
+            # Safe evaluation using ast.literal_eval for basic arithmetic
+            import ast
+            import operator
+            
+            # Allowed operators for safe math evaluation
+            ops = {
+                ast.Add: operator.add,
+                ast.Sub: operator.sub,
+                ast.Mult: operator.mul,
+                ast.Div: operator.truediv,
+                ast.Pow: operator.pow,
+                ast.USub: operator.neg,
+            }
+            
+            def eval_expr(node):
+                if isinstance(node, ast.Num):
+                    return node.n
+                elif isinstance(node, ast.BinOp):
+                    return ops[type(node.op)](eval_expr(node.left), eval_expr(node.right))
+                elif isinstance(node, ast.UnaryOp):
+                    return ops[type(node.op)](eval_expr(node.operand))
+                else:
+                    raise ValueError("Unsupported operation")
+            
+            result = eval_expr(ast.parse(expr, mode='eval').body)
             return f"[CALC] {expr} = {result}"
-        except:
-            return "[CALC] Invalid expression"
+        except Exception as e:
+            return f"[CALC] Invalid expression: {str(e)}"
 
     @staticmethod
     def route(tool_id: int, arg: str) -> str:

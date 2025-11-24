@@ -9,13 +9,16 @@ import subprocess
 
 def check_dependencies():
     """Check if required packages are installed"""
+    import importlib.util
+    
     required = ['pyinstaller', 'torch', 'transformers', 'Pillow', 'requests']
     missing = []
     
     for package in required:
-        try:
-            __import__(package)
-        except ImportError:
+        # Handle package name differences
+        package_name = 'PIL' if package == 'Pillow' else package
+        spec = importlib.util.find_spec(package_name)
+        if spec is None:
             missing.append(package)
     
     if missing:
@@ -36,7 +39,6 @@ def build_executable():
         '--name=GrokMiniChat',
         '--onedir',  # Create a directory with all dependencies
         '--windowed',  # No console window
-        '--icon=NONE',  # Add icon if you have one
         '--add-data=grok_mini.py;.',
         '--add-data=requirements.txt;.',
         '--hidden-import=torch',
