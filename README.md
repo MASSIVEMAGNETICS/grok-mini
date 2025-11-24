@@ -79,6 +79,7 @@ python example.py
 - `grok_mini.py` - Core model implementation
 - `example.py` - CLI usage example
 - `recursive_tool_agent.py` - Recursive Tool-Graph Agent (RTGA)
+- `rtga_example.py` - RTGA demonstration script
 - `setup_windows.py` - Build Windows executable
 - `launch_chat.bat` - Windows launcher script
 - `requirements.txt` - Python dependencies
@@ -96,6 +97,15 @@ A self-improving agent substrate that generates Python tools on-the-fly using GP
 - **Execution Layer**: Dynamic Python runtime compilation
 - **Tool Lifecycle**: Generate → Compile → Execute → Store → Retrieve
 - **Semantic Retrieval**: Zero-shot tool recall from graph memory
+
+**Quick Start:**
+```bash
+# Set your OpenAI API key
+export OPENAI_API_KEY="sk-..."
+
+# Run the demo
+python rtga_example.py
+```
 
 **Usage:**
 ```python
@@ -118,6 +128,9 @@ bot.visualize()
 **Requirements:**
 - OpenAI API key (set as `OPENAI_API_KEY` environment variable)
 - Dependencies: `openai`, `networkx`, `matplotlib`
+
+**Security Note:**
+The RTGA uses dynamic code execution. Only use in trusted environments. See security warnings in the code.
 
 ### 🎨 Chat Application
 - Modern, responsive UI with dark theme
