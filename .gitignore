@@ -6,3 +6,6 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+# RTGA output files
+tool_graph.png
+tool_graph.gexf
