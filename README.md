@@ -78,6 +78,8 @@ python example.py
 - `chat_app.py` - Windows GUI chat application
 - `grok_mini.py` - Core model implementation
 - `example.py` - CLI usage example
+- `recursive_tool_agent.py` - Recursive Tool-Graph Agent (RTGA)
+- `rtga_example.py` - RTGA demonstration script
 - `setup_windows.py` - Build Windows executable
 - `launch_chat.bat` - Windows launcher script
 - `requirements.txt` - Python dependencies
@@ -85,6 +87,50 @@ python example.py
 - `WINDOWS_INSTALL.md` - Windows installation guide
 
 ## Features
+
+### 🤖 Recursive Tool-Graph Agent (RTGA)
+A self-improving agent substrate that generates Python tools on-the-fly using GPT-4, executes them, and persists them to a semantic graph for zero-shot retrieval.
+
+**Key Features:**
+- **Cognitive Layer**: GPT-4o powered code generation
+- **Memory Layer**: NetworkX directed graph for semantic tool storage
+- **Execution Layer**: Dynamic Python runtime compilation
+- **Tool Lifecycle**: Generate → Compile → Execute → Store → Retrieve
+- **Semantic Retrieval**: Zero-shot tool recall from graph memory
+
+**Quick Start:**
+```bash
+# Set your OpenAI API key
+export OPENAI_API_KEY="sk-..."
+
+# Run the demo
+python rtga_example.py
+```
+
+**Usage:**
+```python
+from recursive_tool_agent import RecursiveBuilder
+
+# Initialize agent
+bot = RecursiveBuilder()
+
+# Generate and execute tools
+bot.execute("Write a function to calculate the fibonacci sequence")
+bot.execute("Create a function to generate a secure random password")
+
+# Retrieve previously generated tools (no regeneration)
+bot.execute("Run the calculate_fibonacci function")
+
+# Visualize the tool graph
+bot.visualize()
+```
+
+**Requirements:**
+- OpenAI API key (set as `OPENAI_API_KEY` environment variable)
+- Dependencies: `openai`, `networkx`, `matplotlib`
+
+**Security Note:**
+The RTGA uses dynamic code execution. Only use in trusted environments. See security warnings in the code.
 
 ### 🎨 Chat Application
 - Modern, responsive UI with dark theme
