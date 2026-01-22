@@ -51,9 +51,12 @@ def quantize_checkpoint_simple(input_path: str, output_path: str, bits: int = 8)
     qstate = {}
     for k, v in state.items():
         if isinstance(v, torch.Tensor) and v.is_floating_point():
-            # compute scale/zero_point and store quantized int8 plus metadata
+            # compute scale/zero_point from tensor statistics for better quantization
             try:
-                q = torch.quantize_per_tensor(v.contiguous(), scale=1.0, zero_point=0, dtype=torch.qint8)
+                v_min, v_max = v.min().item(), v.max().item()
+                scale = (v_max - v_min) / 255.0 if v_max != v_min else 1.0
+                zero_point = 0
+                q = torch.quantize_per_tensor(v.contiguous(), scale=scale, zero_point=zero_point, dtype=torch.qint8)
                 qstate[k] = {"q_tensor": q.int_repr(), "scale": q.q_scale(), "zero_point": q.q_zero_point(), "shape": list(v.shape)}
             except Exception:
                 qstate[k] = {"float": v.to(torch.float16)}

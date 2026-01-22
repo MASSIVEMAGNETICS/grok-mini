@@ -225,9 +225,17 @@ class Tensor:
                 return
             g = out.grad
             if self.requires_grad:
-                denom = np.prod(self.data.shape) if axis is None else np.prod(np.array(self.data.shape)[list(axis)])
+                if axis is None:
+                    denom = self.data.size
+                else:
+                    # Handle axis as tuple properly
+                    axes = axis if isinstance(axis, tuple) else (axis,)
+                    denom = np.prod([self.data.shape[a] for a in axes])
                 if not keepdims and axis is not None:
-                    g = np.expand_dims(g, axis)
+                    # Expand dims for broadcasting
+                    axes = axis if isinstance(axis, tuple) else (axis,)
+                    for a in sorted(axes):
+                        g = np.expand_dims(g, axis=a)
                 self.grad = self.grad + np.ones_like(self.data) * (g / denom)
         out._backward = _backward
         return out

@@ -9,7 +9,7 @@ A NumPy-only reverse-mode automatic differentiation engine designed for correctn
 No installation needed! Just copy `predictive_autograd_engine.py` to your project.
 
 **Requirements:**
-- Python 3.10+
+- Python 3.8+
 - NumPy >= 1.21
 
 ## Quick Example
